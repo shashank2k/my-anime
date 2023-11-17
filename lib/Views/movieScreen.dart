@@ -31,7 +31,7 @@ class _MovieScreenState extends State<MovieScreen> {
     return Obx(
           () {
         if (movieController.movies.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+          return const Scaffold(body: Center(child: CircularProgressIndicator()),);
         } else {
           print('width ${Get.width}');
           return GridView.builder(

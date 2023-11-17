@@ -3,6 +3,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:myanime/Controller/animeWatcherController.dart';
 import 'package:myanime/Controller/homeController.dart';
 import 'package:myanime/Views/animeDetailsScreen.dart';
@@ -21,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   AnimeWatcherController animeWatcherController =
       Get.put(AnimeWatcherController());
   bool isDarkMode = false;
+  String title = '';
 
   @override
   void initState() {
@@ -76,6 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       homeController.recentRelease.map((anime) {
                                     return Builder(
                                       builder: (BuildContext context) {
+                                        title = (anime.animeTitle.toString().length > 35)?'${anime.animeTitle.toString().substring(0, 35)}...':anime.animeTitle.toString();
                                         return GestureDetector(
                                           onTap: () {
                                             Get.to(() => AnimeDetailsScreen(
@@ -130,8 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                             5),
                                                   ),
                                                   child: Text(
-                                                    anime
-                                                        .animeTitle, // Your title here
+                                                    title, // Your title here
                                                     style:
                                                         myTextTheme.bodySmall,
                                                     maxLines: 1,
@@ -190,6 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             animeWatcherController
                                                 .recentWatches[index]
                                                 .split(',');
+                                        print('image for $index is ${data[2]}');
                                         return GestureDetector(
                                           onTap: () {
                                             Get.to(() => AnimeDetailsScreen(
@@ -259,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               : const SizedBox(),
                         ),
 
-                        // GenreWidget(),
+                        GenreWidget(),
 
                         const SizedBox(height: 40,),
                       ],
@@ -362,6 +365,7 @@ class GenreWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    RxInt selectedIndex = 0.obs;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -380,19 +384,27 @@ class GenreWidget extends StatelessWidget {
               // final anime = homeController.popularAnime[index];
               return GestureDetector(
                 onTap: () {
+                  selectedIndex.value = index;
+                  print('index is ${selectedIndex}');
                   // Get.to(() => AnimeDetailsScreen(
                   //   animeKey:
                   //   homeController.popularAnime[index].animeId, animeTitle: homeController.popularAnime[index].animeTitle,));
                 },
-                child: Padding(padding: const EdgeInsets.symmetric(horizontal: 5),child: Container(
-                  // height: 50,
-                  // width: 100,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10.0),
-                    color: Colors.grey,
-                  ),
-                  child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6,vertical: 5),child: Center(child: Text(homeController.genre[index])),),
-                ),),
+                child: Padding(padding: const EdgeInsets.symmetric(horizontal: 5),
+                  child: 
+                  Obx(() => Container(
+                    // height: 50,
+                    // width: 100,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10.0),
+                      color: selectedIndex.value == index? Colors.red:Colors.grey,
+                    ),
+                    child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12,vertical: 5),child: Center(child: Text(homeController.genre[index],style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: selectedIndex.value == index? Colors.white:Colors.black,
+                    ),)),),
+                  )),),
 
                 // Stack(
                 //   children: [
