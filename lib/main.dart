@@ -1,20 +1,35 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/instance_manager.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:myanime/Controller/homeController.dart';
+import 'package:myanime/Shared/theme.dart';
 import 'package:myanime/Views/homeScreen.dart';
 import 'package:myanime/Views/movieScreen.dart';
+import 'package:myanime/Views/watchlistScreen.dart';
 
+import 'Controller/animeWatcherController.dart';
 import 'Model/anime.dart';
+import 'Service/notificationService.dart';
 import 'Views/animeDetailsScreen.dart';
 
 void main() {
-  runApp(const MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  NotificationService().initNotification();
+
+  runApp(ThemeProvider(
+    settings: ValueNotifier(ThemeSettings(
+      sourceColor: Colors.pink,
+      themeMode: ThemeMode.system,
+    )),
+    lightDynamic: const ColorScheme.light(), // Replace with your light color scheme
+    darkDynamic: const ColorScheme.dark(),   // Replace with your dark color scheme
+    child: const MyApp(),));
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
 
   // This widget is the root of your application.
   @override
@@ -24,6 +39,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
+        textTheme: myTextTheme,
       ),
       home: const MyHomePage(title: 'My anime app'),
     );
@@ -51,10 +67,7 @@ class _MyHomePageState extends State<MyHomePage> {
   static const List<Widget> _widgetOptions = <Widget>[
     HomeScreen(),
     MovieScreen(),
-    Text(
-      'Index 2: School',
-      style: optionStyle,
-    ),
+    WatchListScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -65,6 +78,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
+
+    // serverCheckService.initializeNotifications();
+    // serverCheckService.checkServerAndNotify('https://my-anime.onrender.com');
+    // NotificationService().showNotification(id: 0,title: 'My- anime',body: 'hey');
+
+
+    NotificationService().checkConnection();
+
     homeController.fetchRecentReleases().then((data) {
       homeController.recentRelease.value = data;
     });
@@ -84,10 +105,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-
-    return GetMaterialApp(home:  Scaffold(
+    final themeProvider = ThemeProvider.of(context);
+    return GetMaterialApp(theme: themeProvider.theme(context),initialBinding: BindingsBuilder(() {
+      Get.lazyPut(() => AnimeWatcherController());
+    }),home:  Scaffold(
       appBar: AppBar(
-        title: const Text('My Anime'),
+        title: Text('My Anime',style: GoogleFonts.poppins(fontSize: 22,fontWeight: FontWeight.bold)),
         actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.search),
@@ -101,30 +124,42 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.movie_creation_rounded),
-            label: 'Movies',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.school),
-            label: 'School',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.amber[800],
-        onTap: _onItemTapped,
-      ),
+      bottomNavigationBar: ClipRRect(
+        clipBehavior: Clip.hardEdge,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(16), // Adjust the border radius as needed
+          topRight: Radius.circular(16), // Adjust the border radius as needed
+        ),
+        child: BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.movie_creation_rounded),
+              label: 'Movies',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.bookmark),
+              label: 'Watch list',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          selectedItemColor: Colors.pinkAccent.shade100,
+          onTap: _onItemTapped,
+          unselectedLabelStyle: myTextTheme.bodySmall,
+          selectedLabelStyle: myTextTheme.titleSmall,
+          elevation: 5,
+        ),
+      )
+      ,
     ),);
   }
 }
 class AnimeSearchDelegate extends SearchDelegate<String> {
   HomeController homeController = Get.put(HomeController());
+
   @override
   List<Widget> buildActions(BuildContext context) {
     // This is the "clear text" button in the search bar.
@@ -164,31 +199,56 @@ class AnimeSearchDelegate extends SearchDelegate<String> {
           return Center(child: Text('No results found for "$query"'));
         } else {
           final searchResults = snapshot.data;
-          return ListView.builder(
+          return GridView.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2, // Set the number of items per row
+
+            ),
             itemCount: searchResults!.length,
+
             itemBuilder: (context, index) {
-              return ListTile(
+              return GestureDetector(
                 onTap: () {
                   print('tapped ${searchResults[index].animeId}');
                   close(context, '');
-                  Get.to(() => AnimeDetailsScreen(animeKey: searchResults[index].animeId));
+                  Get.to(() => AnimeDetailsScreen(animeKey: searchResults[index].animeId, animeTitle: searchResults[index].animeTitle,));
                 },
-                  title: Text(searchResults[index].animeTitle),
-                  trailing: Container(
-                    margin: const EdgeInsets.all(10),
-                    clipBehavior: Clip.hardEdge,
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(10)),
-                    child: CachedNetworkImage(
-                      fit: BoxFit.cover,
-                      imageUrl: searchResults[index].animeImg,
-                      placeholder: (context, url) => const CircularProgressIndicator(),
-                      errorWidget: (context, url, error) {
-                        print("Error loading image: $error");
-                        return const Icon(Icons.error);
-                      },
-                    ),
-                  )
-                // You can customize how you want to display the search results.
+                child: Container(
+                  height: 200,
+                  width: 160, // Set the desired width for each item
+                  margin: const EdgeInsets.all(10),
+                  clipBehavior: Clip.hardEdge,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      CachedNetworkImage(
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: 160,
+                        imageUrl: searchResults[index].animeImg,
+                        placeholder: (context, url) => const CircularProgressIndicator(),
+                        errorWidget: (context, url, error) {
+                          print("Error loading image: $error");
+                          return const Icon(Icons.error);
+                        },
+                      ),
+                      const SizedBox(
+                        height: 2, // Adjust the spacing between image and text
+                      ),
+                      Flexible(
+                        child: Text(
+                          searchResults[index].animeTitle,
+                          maxLines: 2, // You can adjust the number of lines
+                          overflow: TextOverflow.ellipsis,
+                          style: myTextTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               );
             },
           );
@@ -216,19 +276,24 @@ class AnimeSearchDelegate extends SearchDelegate<String> {
       return anime.toLowerCase().contains(query.toLowerCase());
     }).toList();
 
-    return ListView.builder(
-      itemCount: suggestionList.length,
-      itemBuilder: (context, index) {
-        return ListTile(
-          title: Text(suggestionList[index]),
-          onTap: () {
-            // You can perform an action when a suggestion is selected.
-            query = suggestionList[index];
-            showResults(context);
-          },
-        );
-      },
+    return Scaffold(
+      body: SizedBox(height: Get.height,width: Get.width,child: ListView.builder(
+        itemCount: suggestionList.length,
+        itemBuilder: (context, index) {
+          return ListTile(
+            title: Text(suggestionList[index],style: myTextTheme.displaySmall,),
+            onTap: () {
+              // You can perform an action when a suggestion is selected.
+              query = suggestionList[index];
+              showResults(context);
+            },
+          );
+        },
+      ),)
     );
+
+
   }
+
 }
 

@@ -1,7 +1,26 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:material_color_utilities/material_color_utilities.dart';
+
+
+final TextTheme myTextTheme = TextTheme(
+  displayLarge: GoogleFonts.poppins(fontSize: 22,fontWeight: FontWeight.bold),
+  displayMedium: GoogleFonts.poppins(fontSize: 20,fontWeight: FontWeight.bold),
+  displaySmall: GoogleFonts.poppins(fontSize: 16,fontWeight: FontWeight.bold),
+  headlineMedium: GoogleFonts.poppins(fontSize: 16,fontWeight: FontWeight.bold),
+  headlineSmall: GoogleFonts.poppins(fontSize: 14,fontWeight: FontWeight.bold),
+  titleLarge: GoogleFonts.poppins(fontSize: 18,fontWeight: FontWeight.bold),
+  titleMedium: GoogleFonts.poppins(fontSize: 16,fontWeight: FontWeight.bold),
+  titleSmall: GoogleFonts.poppins(fontSize: 14,fontWeight: FontWeight.bold),
+  bodyLarge: GoogleFonts.poppins(fontSize: 16,fontWeight: FontWeight.bold),
+  bodyMedium: GoogleFonts.poppins(fontSize: 14,fontWeight: FontWeight.bold),
+  labelLarge: GoogleFonts.poppins(fontSize: 18,fontWeight: FontWeight.bold),
+  bodySmall: GoogleFonts.poppins(fontSize: 12,fontWeight: FontWeight.w400),
+  labelSmall: GoogleFonts.poppins(fontSize: 15,fontWeight: FontWeight.bold),
+);
+
 
 class NoAnimationPageTransitionsBuilder extends PageTransitionsBuilder {
   const NoAnimationPageTransitionsBuilder();

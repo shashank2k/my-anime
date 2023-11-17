@@ -77,6 +77,7 @@ class Episode {
   });
 
   factory Episode.fromJson(Map<String, dynamic> json) {
+    // print('in ep');
     return Episode(
       episodeId: json['episodeId'] ?? '',
       episodeNum: json['episodeNum'] ?? '',

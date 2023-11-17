@@ -12,6 +12,7 @@ class MovieController{
     try {
       final response = await Dio().get('https://my-anime.onrender.com/anime-movies');
       if (response.statusCode == 200) {
+        print(response.data);
         final List<dynamic> data = response.data;
         return  data.map((json) => Anime.fromJson(json)).toList();
       } else {
