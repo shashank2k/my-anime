@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
+import 'package:myanime/Shared/common.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../Model/anime.dart';
@@ -74,9 +75,9 @@ class HomeController{
 
   Future<List<Anime>> fetchRecentReleases() async {
     try {
-      final response = await Dio().get('https://my-anime.onrender.com/recent-release');
+      final response = await Dio().get('${Common.baseUrl}anime/gogoanime/recent-episodes');
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
+        final List<dynamic> data = response.data['results'];
         return  data.map((json) => Anime.fromJson(json)).toList();
       } else {
         throw Exception('Failed to fetch recent releases');
@@ -103,9 +104,9 @@ class HomeController{
 
   Future<List<Anime>> fetchTopAiringAnime() async {
     try {
-      final response = await Dio().get('https://my-anime.onrender.com/top-airing');
+      final response = await Dio().get('${Common.baseUrl}anime/gogoanime/top-airing');
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
+        final List<dynamic> data = response.data['results'];
         return  data.map((json) => Anime.fromJson(json)).toList();
       } else {
         throw Exception('Failed to fetch recent releases');
@@ -117,9 +118,9 @@ class HomeController{
 
   Future<List<Anime>> fetchSearchedAnime(String key) async {
     try {
-      final response = await Dio().get('https://my-anime.onrender.com/search?keyw=$key');
+      final response = await Dio().get('https://consumet-api-khxp.onrender.com/anime/gogoanime/$key?');
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
+        final List<dynamic> data = response.data['results'];
         return  data.map((json) => Anime.fromJson(json)).toList();
       } else {
         throw Exception('Failed to fetch recent releases');

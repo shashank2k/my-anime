@@ -39,6 +39,7 @@ class AnimeWatcherController extends GetxController {
     // Update the map with the new data
     print('in recent watches');
     recentWatches = prefs.getStringList('RecentWatchesList') ?? [];
+    recentWatches = recentWatches.reversed.toList();
     print('recent watches $recentWatches');
   }
 

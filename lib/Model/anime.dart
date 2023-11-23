@@ -19,13 +19,13 @@ class Anime {
 
   factory Anime.fromJson(Map<String, dynamic> json) {
     return Anime(
-      animeId: json['animeId'] ?? '',
+      animeId: json['id'] ?? '',
       episodeId: json['episodeId'] ?? '',
-      animeTitle: json['animeTitle'] ?? '',
+      animeTitle: json['title'] ?? '',
       episodeNum: json['episodeNum'] ?? '',
       subOrDub: json['subOrDub'] ?? '',
-      animeImg: json['animeImg'] ?? '',
-      episodeUrl: json['episodeUrl'] ?? '',
+      animeImg: json['image'] ?? '',
+      episodeUrl: json['url'] ?? '',
     );
   }
 
