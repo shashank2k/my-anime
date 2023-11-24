@@ -51,6 +51,7 @@ dependencies:
   chewie: ^1.7.1
   flutter_svg: ^2.0.9
   lottie: ^2.7.0
+  webview_flutter: ^4.4.2
 
 dev_dependencies:
   flutter_test:

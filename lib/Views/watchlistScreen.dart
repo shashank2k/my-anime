@@ -40,7 +40,7 @@ class _WatchListScreenState extends State<WatchListScreen> {
                       children: [
                         Text(
                           'Your watchlist',
-                          style: myTextTheme.titleMedium,
+                          style: myTextTheme.titleLarge,
                         ),
                         TextButton(onPressed: (){
                           homeController.watchList.clear();
@@ -107,21 +107,29 @@ class _WatchListScreenState extends State<WatchListScreen> {
                                           ),
                                         ),
                                       ),
-
-                                      Column(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            data[0],
-                                            style: myTextTheme.titleMedium,
-                                          ),
-                                          SizedBox(height: 8,),
-                                          Text(
-                                            data[1],
-                                            style: myTextTheme.titleSmall,
-                                          ),
-                                        ],
+                                      const SizedBox(width: 15,),
+                                      Flexible(
+                                        child: Text(
+                                          data[1],
+                                          style: myTextTheme.titleSmall,
+                                          softWrap: true,
+                                        ),
                                       ),
+
+                                      // Column(
+                                      //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      //   children: [
+                                      //     Text(
+                                      //       data[1],
+                                      //       style: myTextTheme.titleMedium,
+                                      //     ),
+                                      //     // SizedBox(height: 8,),
+                                      //     // Text(
+                                      //     //   data[0],
+                                      //     //   style: myTextTheme.titleSmall,
+                                      //     // ),
+                                      //   ],
+                                      // ),
                                       const SizedBox(width: 20),
 
                                       IconButton(onPressed: (){
@@ -162,7 +170,7 @@ class _WatchListScreenState extends State<WatchListScreen> {
                   //   style: myTextTheme.titleMedium,
                   // ),
                   Text(
-                    'Add items to watchlist',
+                    'Watchlist Empty!',
                     style: myTextTheme.titleMedium,
                   ),
                 ],

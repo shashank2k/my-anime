@@ -35,8 +35,15 @@ class _MovieScreenState extends State<MovieScreen> {
 
     return Obx(() {
       if (movieController.movies.isEmpty && loading.value == true) {
-        return const Center(
-          child: CircularProgressIndicator(),
+        return Center(
+          child: Lottie.asset(
+            'assets/lottie/mainAppLoading.json', // Replace with the path to your local JSON file
+            width: Get.width, // Adjust the width as needed
+            height: Get.height/2,
+            repeat: true, // Set to true if you want the animation to loop
+            reverse: false, // Set to true if you want the animation to play in reverse
+            animate: true, // Set to false if you want to start with the animation paused
+          ),
         );
       } else if (movieController.movies.isEmpty && searchText.isEmpty) {
         return Scaffold(
@@ -225,12 +232,6 @@ class _MovieScreenState extends State<MovieScreen> {
                   : Expanded(
                       child: Stack(
                       children: [
-                        loading.value
-                            ? const Align(
-                                alignment: Alignment.center,
-                                child: CircularProgressIndicator(),
-                              )
-                            : const SizedBox(),
                         GridView.builder(
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
@@ -239,7 +240,7 @@ class _MovieScreenState extends State<MovieScreen> {
                                 : 2, // Set the number of columns
                             crossAxisSpacing: 5.0,
                             mainAxisSpacing: 5.0,
-                            childAspectRatio: 4 / 5,
+                            childAspectRatio: 0.8,
                           ),
                           itemCount: movieController.movies.length,
                           itemBuilder: (context, index) {
@@ -271,9 +272,9 @@ class _MovieScreenState extends State<MovieScreen> {
                                 children: [
                                   Expanded(
                                       child: Container(
-                                    width: 135,
+                                    width: 165,
                                     height: 154,
-                                    margin: const EdgeInsets.all(10),
+                                    // margin: const EdgeInsets.all(10),
                                     clipBehavior: Clip.hardEdge,
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(10),
@@ -282,32 +283,49 @@ class _MovieScreenState extends State<MovieScreen> {
                                       fit: BoxFit.cover,
                                       imageUrl: movie.animeImg,
                                       placeholder: (context, url) =>
-                                          const Center(
-                                        widthFactor: 2,
-                                        heightFactor: 2,
-                                        child: CircularProgressIndicator(),
-                                      ),
+                                          Center(child: Lottie.asset(
+                                            'assets/lottie/imageLoading.json', // Replace with the path to your local JSON file
+                                            width: 50,
+                                            height: 50,
+                                            repeat: true, // Set to true if you want the animation to loop
+                                            reverse: false, // Set to true if you want the animation to play in reverse
+                                            animate: true, // Set to false if you want to start with the animation paused
+                                          ),),
                                       errorWidget: (context, url, error) {
                                         print("Error loading image: $error");
                                         return const Icon(Icons.error);
                                       },
                                     ),
                                   )),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 18),
-                                    child: Text(
-                                      movie.animeTitle,
-                                      style: myTextTheme.bodySmall,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
+                                  Text(
+                                    movie.animeTitle,
+                                    style: myTextTheme.bodySmall,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  )
+                                  // Padding(
+                                  //   padding: const EdgeInsets.symmetric(
+                                  //       horizontal: 18),
+                                  //   child: ,
+                                  // ),
                                 ],
                               ),
                             );
                           },
+                        ),
+                        loading.value
+                            ? Align(
+                          alignment: Alignment.center,
+                          child: Lottie.asset(
+                            'assets/lottie/mainAppLoading.json', // Replace with the path to your local JSON file
+                            width: Get.width, // Adjust the width as needed
+                            height: Get.height/2,
+                            repeat: true, // Set to true if you want the animation to loop
+                            reverse: false, // Set to true if you want the animation to play in reverse
+                            animate: true, // Set to false if you want to start with the animation paused
+                          ),
                         )
+                            : const SizedBox(),
                       ],
                     ))
             ],

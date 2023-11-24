@@ -3,6 +3,7 @@ import 'package:chewie/chewie.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lottie/lottie.dart';
 import 'package:myanime/Controller/animeWatcherController.dart';
 import 'package:myanime/Controller/homeController.dart';
 import 'package:myanime/Controller/videoController.dart';
@@ -201,8 +202,15 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
             ),
             body: Obx(() {
               if (!hasData.value) {
-                return const Center(
-                  child: CircularProgressIndicator(),
+                return Center(
+                  child: Lottie.asset(
+                    'assets/lottie/mainAppLoading.json', // Replace with the path to your local JSON file
+                    width: Get.width, // Adjust the width as needed
+                    height: Get.height/2,
+                    repeat: true, // Set to true if you want the animation to loop
+                    reverse: false, // Set to true if you want the animation to play in reverse
+                    animate: true, // Set to false if you want to start with the animation paused
+                  ),
                 );
               } else {
                 // animeData = animeDetails!;
@@ -260,6 +268,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                             if (videoPlayerService.playingUrl.value != '') {
                               // return SizedBox(width: Get.width,height: Get.height / 4,child: VideoPlayer(videoPlayerService.videoController),);
                               return Stack(
+                                alignment: Alignment.center,
                                 children: [
                                   FittedBox(
                                     fit: BoxFit.cover,
@@ -273,15 +282,14 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                                     ),
                                   ),
                                   loading.value
-                                      ? SizedBox(
-                                    height: Get.height / 3,
-                                    width: double.infinity,
-                                    child: const Center(
-                                      heightFactor: 2,
-                                      widthFactor: 2,
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  )
+                                      ?  Align(alignment: Alignment.center,child: Lottie.asset(
+                                    'assets/lottie/imageLoading.json', // Replace with the path to your local JSON file
+                                    width: 50,
+                                    height: 50,
+                                    repeat: true, // Set to true if you want the animation to loop
+                                    reverse: false, // Set to true if you want the animation to play in reverse
+                                    animate: true, // Set to false if you want to start with the animation paused
+                                  ),)
                                       : const SizedBox(),
                                 ],
                               );
@@ -289,6 +297,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                             } else {
                               print('currently ${loading.value}');
                               return Stack(
+                                alignment: Alignment.center,
                                 children: [
                                   SizedBox(
                                     height: Get.height / 3,
@@ -297,7 +306,14 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                                       fit: BoxFit.cover,
                                       imageUrl: animeDetails!.image,
                                       placeholder: (context, url) =>
-                                      const CircularProgressIndicator(),
+                                          Center(child: Lottie.asset(
+                                            'assets/lottie/imageLoading.json', // Replace with the path to your local JSON file
+                                            width: 50,
+                                            height: 50,
+                                            repeat: true, // Set to true if you want the animation to loop
+                                            reverse: false, // Set to true if you want the animation to play in reverse
+                                            animate: true, // Set to false if you want to start with the animation paused
+                                          ),),
                                       errorWidget: (context, url, error) {
                                         print("Error loading image: $error");
                                         return const Icon(Icons.error);
@@ -305,15 +321,14 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                                     ),
                                   ),
                                   loading.value
-                                      ? SizedBox(
-                                    height: Get.height / 3,
-                                    width: double.infinity,
-                                    child: const Center(
-                                      heightFactor: 2,
-                                      widthFactor: 2,
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  )
+                                      ?  Align(alignment: Alignment.center,child: Lottie.asset(
+                                    'assets/lottie/imageLoading.json', // Replace with the path to your local JSON file
+                                    width: 50,
+                                    height: 50,
+                                    repeat: true, // Set to true if you want the animation to loop
+                                    reverse: false, // Set to true if you want the animation to play in reverse
+                                    animate: true, // Set to false if you want to start with the animation paused
+                                  ),)
                                       : const SizedBox(),
                                 ],
                               );

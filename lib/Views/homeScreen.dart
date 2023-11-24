@@ -43,24 +43,6 @@ class _HomeScreenState extends State<HomeScreen> {
     await animeWatcherController.init();
     animeWatcherController.retrieveRecentWatches();
 
-    if (!imagesPrecached) {
-      try {
-        for (var image in homeController.recentRelease) {
-          String url = image.animeImg;
-          await precacheImage(NetworkImage(url), context);
-        }
-        for (var imageUrl in homeController.topAiringAnime) {
-          String url = imageUrl.animeImg;
-          await precacheImage(NetworkImage(url), context);
-          print('done for image $url');
-        }
-        imagesPrecached = true;
-      } catch (e) {
-        // Handle errors during precaching
-        print('Error during image precaching: $e');
-      }
-    }
-
     super.didChangeDependencies();
   }
 
@@ -113,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Text(
                               'Recent Releases',
-                              style: myTextTheme.displaySmall,
+                              style: myTextTheme.titleLarge,
                             ),
                             IconButton(
                               icon: const Icon(Icons.search),
@@ -160,7 +142,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                             width: double.infinity,
                                             imageUrl: anime.animeImg,
                                             placeholder: (context, url) =>
-                                                Center(widthFactor: 2,heightFactor: 2,child: CircularProgressIndicator(),),
+                                               Center(child: Lottie.asset(
+                                                 'assets/lottie/imageLoading.json', // Replace with the path to your local JSON file
+                                                 width: 80,
+                                                 height: 80,
+                                                 repeat: true, // Set to true if you want the animation to loop
+                                                 reverse: false, // Set to true if you want the animation to play in reverse
+                                                 animate: true, // Set to false if you want to start with the animation paused
+                                               ),),
                                             errorWidget:
                                                 (context, url, error) {
                                               print(
@@ -218,7 +207,26 @@ class _HomeScreenState extends State<HomeScreen> {
                                   seconds: 3), // Auto-play interval
                             ),
                           )
-                              : SizedBox(height: Get.height/2.6,width: Get.width,child: Padding(padding:  EdgeInsets.all(Get.width/4),child: const Center(widthFactor: 2,heightFactor: 2,child: CircularProgressIndicator(),)),),
+                              : SizedBox(width: Get.width,
+                                height: Get.height/1.5,
+                                child: Center(child: Column(children: [
+                                  Lottie.asset(
+                                    'assets/lottie/mainAppLoading.json', // Replace with the path to your local JSON file
+                                    width: Get.width, // Adjust the width as needed
+                                    height: Get.height/2,
+                                    repeat: true, // Set to true if you want the animation to loop
+                                    reverse: false, // Set to true if you want the animation to play in reverse
+                                    animate: true, // Set to false if you want to start with the animation paused
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    'Opening Server...',
+                                    style: myTextTheme.bodyLarge,
+                                    textAlign: TextAlign.center,
+                                  )
+                                ],
+                                ),),
+                              ),
                         ),
                         const SizedBox(
                           height: 10,
@@ -238,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             Text(
                               'Continue watching',
-                              style: myTextTheme.displaySmall,
+                              style: myTextTheme.titleLarge,
                             ),
                             SizedBox(
                               height: 180,
@@ -311,7 +319,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                             height: 130,
                                             imageUrl: data[2],
                                             placeholder: (context, url) =>
-                                                Center(widthFactor: 2,heightFactor: 2,child: CircularProgressIndicator(),),
+                                                Center(child: Lottie.asset(
+                                                  'assets/lottie/imageLoading.json', // Replace with the path to your local JSON file
+                                                  width: 50,
+                                                  height: 50,
+                                                  repeat: true, // Set to true if you want the animation to loop
+                                                  reverse: false, // Set to true if you want the animation to play in reverse
+                                                  animate: true, // Set to false if you want to start with the animation paused
+                                                ),),
                                             errorWidget:
                                                 (context, url, error) {
                                               print(
@@ -368,10 +383,10 @@ class _HomeScreenState extends State<HomeScreen> {
     homeController.fetchRecentReleases().then((data) {
       homeController.recentRelease.value = data;
     });
-    // homeController.fetchTopAiringAnime().then((data) {
-    //   homeController.topAiringAnime.value = data;
-    // });
-
+    homeController.fetchTopAiringAnime().then((data) {
+      homeController.topAiringAnime.value = data;
+    });
+    return Future(() => true);
 
     // homeController.fetchPopularAnime().then((data) {
     //   print('popular');
@@ -468,7 +483,7 @@ class GenreWidget extends StatelessWidget {
       children: [
         Text(
           'Explore Genres',
-          style: myTextTheme.displaySmall,
+          style: myTextTheme.titleMedium,
         ),
         const SizedBox(height: 5,),
         SizedBox(
@@ -552,7 +567,7 @@ class PopularWidget extends StatelessWidget {
           children: [
             Text(
               'Popular Anime',
-              style: myTextTheme.displaySmall,
+              style: myTextTheme.titleMedium,
             ),
             SizedBox(
               height: 240,
@@ -654,17 +669,26 @@ class AnimeSearchDelegate extends SearchDelegate<String> {
       future: homeController.fetchSearchedAnime(query),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(child: Lottie.asset(
+            'assets/lottie/mainAppLoading.json', // Replace with the path to your local JSON file
+            width: 150, // Adjust the width as needed
+            height: 150,
+            repeat: true, // Set to true if you want the animation to loop
+            reverse: false, // Set to true if you want the animation to play in reverse
+            animate: true, // Set to false if you want to start with the animation paused
+          ));
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error.toString()}'));
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(child: Text('No results found for "$query"'));
         } else {
           final searchResults = snapshot.data;
-          return GridView.builder(
+          return Padding(padding: const EdgeInsets.only(left: 5,right: 5,bottom: 10),child:GridView.builder(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // Set the number of items per row
-                childAspectRatio: 0.82
+              crossAxisCount: 2, // Set the number of items per row
+              childAspectRatio: 0.79,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 15,
             ),
             itemCount: searchResults!.length,
             itemBuilder: (context, index) {
@@ -677,45 +701,53 @@ class AnimeSearchDelegate extends SearchDelegate<String> {
                     animeTitle: searchResults[index].animeTitle,
                   ));
                 },
-                child: Container(
+                child: SizedBox(
                   // Set the desired width for each item
-                  margin: const EdgeInsets.all(10),
-                  clipBehavior: Clip.hardEdge,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  // margin: const EdgeInsets.symmetric(horizontal: 10),
+                  // clipBehavior: Clip.hardEdge,
+
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      CachedNetworkImage(
+                      Expanded(child:
+                      Container(clipBehavior: Clip.hardEdge,decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(15),),
+              ),child: CachedNetworkImage(
                         fit: BoxFit.cover,
                         width: double.infinity,
-                        height: 180,
+                        height: 190,
                         imageUrl: searchResults[index].animeImg,
                         placeholder: (context, url) =>
-                        const CircularProgressIndicator(),
+                            Center(child: Lottie.asset(
+                              'assets/lottie/imageLoading.json', // Replace with the path to your local JSON file
+                              width: 50,
+                              height: 50,
+                              repeat: true, // Set to true if you want the animation to loop
+                              reverse: false, // Set to true if you want the animation to play in reverse
+                              animate: true, // Set to false if you want to start with the animation paused
+                            ),),
                         errorWidget: (context, url, error) {
                           print("Error loading image: $error");
                           return const Icon(Icons.error);
                         },
+                      ),)
                       ),
-                      const SizedBox(
-                        height: 2, // Adjust the spacing between image and text
+                      Text(
+                        searchResults[index].animeTitle,
+                        maxLines: 2, // You can adjust the number of lines
+                        overflow: TextOverflow.ellipsis,
+                        style: myTextTheme.bodySmall,
                       ),
-                      Flexible(
-                        child: Text(
-                          searchResults[index].animeTitle,
-                          maxLines: 2, // You can adjust the number of lines
-                          overflow: TextOverflow.ellipsis,
-                          style: myTextTheme.titleSmall,
-                        ),
-                      ),
+                      // Flexible(
+                      //   child:
+                      // ),
                     ],
                   ),
                 ),
               );
             },
-          );
+          ));
         }
       },
     );
@@ -783,33 +815,35 @@ class TopAiringWidget extends StatelessWidget {
             ),
             Text(
               'Top Airing Anime',
-              style: myTextTheme.displaySmall,
+              style: myTextTheme.titleLarge,
             ),
             SizedBox(
               height: 240,
               child:
-              homeController.topAiringAnime.isEmpty ? Center(
-                child: Column(
-                  children: [
-                    Lottie.asset(
-                      'assets/lottie/emptySearch.json', // Replace with the path to your local JSON file
-                      width: 200,
-                      height: 200,
-                      repeat: true, // Set to true if you want the animation to loop
-                      reverse: false, // Set to true if you want the animation to play in reverse
-                      animate: true, // Set to false if you want to start with the animation paused
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
-                    Text(
-                      'hmm...\nNo titles found.',
-                      style: myTextTheme.bodyLarge,
-                      textAlign: TextAlign.center,
-                    )
-                  ],
-                ),
-              ) :
+              homeController.topAiringAnime.isEmpty ?
+              // Center(
+              //   child: Column(
+              //     children: [
+              //       Lottie.asset(
+              //         'assets/lottie/emptySearch.json', // Replace with the path to your local JSON file
+              //         width: 200,
+              //         height: 200,
+              //         repeat: true, // Set to true if you want the animation to loop
+              //         reverse: false, // Set to true if you want the animation to play in reverse
+              //         animate: true, // Set to false if you want to start with the animation paused
+              //       ),
+              //       const SizedBox(
+              //         height: 20,
+              //       ),
+              //       Text(
+              //         'hmm...\nNo titles found.',
+              //         style: myTextTheme.bodyLarge,
+              //         textAlign: TextAlign.center,
+              //       )
+              //     ],
+              //   ),
+              // )
+                  const SizedBox():
               ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: homeController.topAiringAnime.length,
@@ -842,7 +876,14 @@ class TopAiringWidget extends StatelessWidget {
                             height: 180,
                             imageUrl: anime.animeImg,
                           placeholder: (context, url) =>
-                              Center(widthFactor: 2,heightFactor: 2,child: CircularProgressIndicator(),),
+                              Center(child: Lottie.asset(
+                                'assets/lottie/imageLoading.json', // Replace with the path to your local JSON file
+                                width: 50,
+                                height: 50,
+                                repeat: true, // Set to true if you want the animation to loop
+                                reverse: false, // Set to true if you want the animation to play in reverse
+                                animate: true, // Set to false if you want to start with the animation paused
+                              ),),
                             errorWidget: (context, url, error) {
                               print("Error loading image: $error");
                               return const Icon(Icons.error);

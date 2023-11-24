@@ -84,25 +84,6 @@ class _MyHomePageState extends State<MyHomePage> {
   //   //   _selectedIndex = index;
   //   // });
   // }
-  void _onSwipeLeft() {
-    print('swiped left');
-    if (_selectedIndex < _widgetOptions.length - 1) {
-      _selectedIndex.value++;
-      // setState(() {
-      //   _selectedIndex++;
-      // });
-    }
-  }
-
-  void _onSwipeRight() {
-    print('swiped right');
-    if (_selectedIndex > 0) {
-      _selectedIndex.value--;
-      // setState(() {
-      //   _selectedIndex--;
-      // });
-    }
-  }
 
 
   @override
@@ -126,6 +107,21 @@ class _MyHomePageState extends State<MyHomePage> {
       print('top');
       homeController.topAiringAnime.value = data;
     });
+
+    try {
+      for (var image in homeController.recentRelease) {
+        String url = image.animeImg;
+        precacheImage(NetworkImage(url), context);
+      }
+      for (var imageUrl in homeController.topAiringAnime) {
+        String url = imageUrl.animeImg;
+        precacheImage(NetworkImage(url), context);
+        print('done for image $url');
+      }
+    } catch (e) {
+      // Handle errors during precaching
+      print('Error during image precaching: $e');
+    }
 
     // var brightness =
     //     SchedulerBinding.instance.platformDispatcher.platformBrightness;
@@ -186,84 +182,167 @@ class _MyHomePageState extends State<MyHomePage> {
               //     ),
               //   ],
               // ),
-              Obx(() => Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      _selectedIndex.value = 0;
-                      // _onItemTapped(0);
-                    },
-                    child: TweenAnimationBuilder<Color?>(
-                      tween: ColorTween(
-                        begin: _selectedIndex.value == 0 ? Colors.transparent : Colors.black,
-                        end: _selectedIndex.value == 0 ? Colors.red : Colors.transparent,
-                        // end: _selectedIndex == 0 ? Colors.red :isDarkMode.value ? Colors.white : Colors.black,
-                      ),
-                      duration: const Duration(milliseconds: 300),
-                      builder: (_, color, child) {
-                        return Text(
-                          'Anime',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: color != Colors.transparent? color : null,
-                          ),
-                        );
-                      },
-                    ),
+          // Obx(() => Row(
+          //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          //   children: [
+          //     GestureDetector(
+          //       onTap: () {
+          //         _selectedIndex.value = 0;
+          //       },
+          //       child: TweenAnimationBuilder<Color?>(
+          //         tween: ColorTween(
+          //           begin: _selectedIndex.value == 0 ? Colors.transparent : Colors.black,
+          //           end: _selectedIndex.value == 0 ? Colors.red : Colors.transparent,
+          //         ),
+          //         duration: const Duration(milliseconds: 200),
+          //         curve: Curves.easeInOut, // Use Curves.easeInOut for smoother transition
+          //         builder: (_, color, child) {
+          //           return Text(
+          //             'Anime',
+          //             style: GoogleFonts.poppins(
+          //               fontSize: color == Colors.red ? 20 : 16,
+          //               fontWeight: FontWeight.bold,
+          //               color: color != Colors.transparent ? color : null,
+          //             ),
+          //           );
+          //         },
+          //       ),
+          //     ),
+          //     GestureDetector(
+          //       onTap: () {
+          //         _selectedIndex.value = 1;
+          //       },
+          //       child: TweenAnimationBuilder<Color?>(
+          //         tween: ColorTween(
+          //           begin: _selectedIndex.value == 1 ? Colors.transparent : Colors.black,
+          //           end: _selectedIndex.value == 1 ? Colors.red : Colors.transparent,
+          //         ),
+          //         duration: const Duration(milliseconds: 200),
+          //         curve: Curves.easeInOut, // Use Curves.easeInOut for smoother transition
+          //         builder: (_, color, child) {
+          //           return Text(
+          //             'Movies',
+          //             style: GoogleFonts.poppins(
+          //               fontSize: color == Colors.red ? 20 : 16,
+          //               fontWeight: FontWeight.bold,
+          //               color: color != Colors.transparent ? color : null,
+          //             ),
+          //           );
+          //         },
+          //       ),
+          //     ),
+          //     GestureDetector(
+          //       onTap: () {
+          //         _selectedIndex.value = 2;
+          //       },
+          //       child: TweenAnimationBuilder<Color?>(
+          //         tween: ColorTween(
+          //           begin: _selectedIndex.value == 2 ? Colors.transparent : Colors.black,
+          //           end: _selectedIndex.value == 2 ? Colors.red : Colors.transparent,
+          //         ),
+          //         duration: const Duration(milliseconds: 200),
+          //         curve: Curves.easeInOut, // Use Curves.easeInOut for smoother transition
+          //         builder: (_, color, child) {
+          //           return Text(
+          //             'My List',
+          //             style: GoogleFonts.poppins(
+          //               fontSize: color == Colors.red ? 20 : 16,
+          //               fontWeight: FontWeight.bold,
+          //               color: color != Colors.transparent ? color : null,
+          //             ),
+          //           );
+          //         },
+          //       ),
+          //     ),
+          //   ],
+          // ))
+
+          Obx(() => Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  _selectedIndex.value = 0;
+                },
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(
+                    begin: _selectedIndex.value == 0 ? 1.0 : 0.8, // Adjust the scale factor
+                    end: _selectedIndex.value == 0 ? 1.2 : 0.8,
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      _selectedIndex.value = 1;
-                      // _onItemTapped(1);
-                    },
-                    child: TweenAnimationBuilder<Color?>(
-                      tween: ColorTween(
-                        begin: _selectedIndex.value == 1 ? Colors.transparent : Colors.black,
-                        // end: _selectedIndex == 1 ? Colors.red :isDarkMode.value ? Colors.white : Colors.black,
-                        end: _selectedIndex.value == 1 ? Colors.red : Colors.transparent,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut, // Use Curves.easeInOut for smoother transition
+                  builder: (_, scale, child) {
+                    return Transform.scale(
+                      scale: scale,
+                      child: Text(
+                        'Anime',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: _selectedIndex.value == 0 ? Colors.red : Colors.black,
+                        ),
                       ),
-                      duration: const Duration(milliseconds: 300),
-                      builder: (_, color, child) {
-                        return Text(
-                          'Movies',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: color != Colors.transparent? color : null,
-                          ),
-                        );
-                      },
-                    ),
+                    );
+                  },
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  _selectedIndex.value = 1;
+                },
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(
+                    begin: _selectedIndex.value == 1 ? 1.0 : 0.8,
+                    end: _selectedIndex.value == 1 ? 1.2 : 0.8,
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      _selectedIndex.value = 2;
-                      // _onItemTapped(2);
-                    },
-                    child: TweenAnimationBuilder<Color?>(
-                      tween: ColorTween(
-                        begin: _selectedIndex.value == 2 ? Colors.transparent : Colors.black,
-                        end: _selectedIndex.value == 2 ? Colors.red  : Colors.transparent,
-                        // end: _selectedIndex == 2 ? Colors.red  : isDarkMode.value ? Colors.white : Colors.black,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  builder: (_, scale, child) {
+                    return Transform.scale(
+                      scale: scale,
+                      child: Text(
+                        'Movies',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: _selectedIndex.value == 1 ? Colors.red : Colors.black,
+                        ),
                       ),
-                      duration: const Duration(milliseconds: 300),
-                      builder: (_, color, child) {
-                        return Text(
-                          'My List',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: color != Colors.transparent? color : null,
-                          ),
-                        );
-                      },
-                    ),
+                    );
+                  },
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  _selectedIndex.value = 2;
+                },
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(
+                    begin: _selectedIndex.value == 2 ? 1.0 : 0.8,
+                    end: _selectedIndex.value == 2 ? 1.2 : 0.8,
                   ),
-                ],
-              ))
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  builder: (_, scale, child) {
+                    return Transform.scale(
+                      scale: scale,
+                      child: Text(
+                        'My List',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: _selectedIndex.value == 2 ? Colors.red : Colors.black,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ],
+          ))
+
+
+          ],
           ),
 
           // Row(
@@ -317,23 +396,26 @@ class _MyHomePageState extends State<MyHomePage> {
           // ),
         ),),
       body:
-      WillPopScope(child: GestureDetector(
-        onHorizontalDragEnd: (DragEndDetails details) {
-          if (details.primaryVelocity != null) {
-            // Check if the swipe is in the left or right direction
-            if (details.primaryVelocity! < 0) {
-              // Swiped to the left
-              _onSwipeLeft();
-            } else if (details.primaryVelocity! > 0) {
-              // Swiped to the right
-              _onSwipeRight();
-            }
-          }
-        },
-        child: Obx(() => Center(
-          child: _widgetOptions.elementAt(_selectedIndex.value),
-        )),
-      ), onWillPop:  () async {
+      WillPopScope(child:
+      Obx(() => Center(
+        child: _widgetOptions.elementAt(_selectedIndex.value),
+      )),
+      // GestureDetector(
+      //   onHorizontalDragEnd: (DragEndDetails details) {
+      //     if (details.primaryVelocity != null) {
+      //       // Check if the swipe is in the left or right direction
+      //       if (details.primaryVelocity! < 0) {
+      //         // Swiped to the left
+      //         _onSwipeLeft();
+      //       } else if (details.primaryVelocity! > 0) {
+      //         // Swiped to the right
+      //         _onSwipeRight();
+      //       }
+      //     }
+      //   },
+      //   child: ,
+      // ),
+          onWillPop:  () async {
         showModalBottomSheet(context: context, builder: (context) {
           return Container(
               width: Get.width,
