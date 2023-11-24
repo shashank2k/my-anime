@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:chewie/chewie.dart';
 import 'package:dio/dio.dart';
@@ -35,6 +37,9 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
   Icon bookmarkIcon = const Icon(Icons.bookmark_border);
   Map<String, String> availableServers = {};
   List<String> servers = [];
+  RxInt currentChunkIndex = 0.obs;
+  List<List<Episode>> chunks = [];
+
 
   @override
   void initState() {
@@ -48,7 +53,17 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
   Future<void> didChangeDependencies() async {
     await animeWatcherController.init();
     animeDetails = await fetchAnimeDetails(widget.animeKey);
+    if(animeDetails != null)chunkEpisodes(animeDetails!.episodesList);
     super.didChangeDependencies();
+  }
+
+  void chunkEpisodes(List<Episode> episodes) {
+    print('chunks called');
+    for (int i = 0; i < episodes.length; i += 100) {
+      chunks.add(episodes.sublist(i, i + 100 > episodes.length ? episodes.length : i + 100));
+    }
+    chunks.reversed.toList();
+    print('chunks ended');
   }
 
   Future<AnimeDetails> fetchAnimeDetails(String key) async {
@@ -72,7 +87,7 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
     loading.value = true;
     final response = await Dio().get('${Common.baseGogoUrl}watch/$videoId');
     print('${Common.baseGogoUrl}watch/$videoId');
-    print('anime key ${widget.animeTitle} id: $videoId');
+    print('fetch video url called anime key ${widget.animeTitle} id: $videoId');
     print(
         'in retrive ${animeWatcherController.animeData.containsKey(videoId)} ${animeWatcherController.animeData[videoId]}');
     if (response.statusCode == 200) {
@@ -82,7 +97,7 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
       if (sources.isNotEmpty) {
         final String videoUrl =
             sources[0]['url']; // Assuming the first source is the video URL
-        print('video url: $videoUrl');
+        print('video url: $videoUrl, playing url: ${videoPlayerService.playingUrl.value}');
         // try{
         //   if(videoPlayerService.videoController.value.isInitialized)  await videoPlayerService.videoController.dispose();
         // }catch(e){
@@ -91,6 +106,19 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
         // if(videoPlayerService.initialized){
         //   videoPlayerService.videoController.dataSource = videoUrl;
         // }
+        // if(videoPlayerService.playingUrl.value == videoUrl)return;
+        // print('video controller is blank: ${videoPlayerService.videoController.value.isInitialized}');
+        // if(selectedEpIndex.value != 0001 && videoPlayerService.videoController.dataSource == videoUrl)return;
+        try{
+          print('datasource same ${videoPlayerService.videoController.dataSource}');
+          if(videoPlayerService.videoController.dataSource == videoUrl) {
+            print('datasource same');
+            return;
+          }
+        }
+        catch(e){
+          print('catched first time video');
+        }
         await videoPlayerService.initializeVideo(videoUrl);
         // await videoPlayerService.initializeVideo('http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
         if (animeWatcherController.animeData.containsKey(videoId)) {
@@ -108,6 +136,32 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
         }
         // animeWatcherController.storeData( videoId, Duration.zero);
         // videoPlayerService.videoController.play();
+        print('current route ${Get.currentRoute} previous route ${Get.previousRoute}');
+        if(Get.currentRoute == '/') {
+          videoPlayerService.videoController.dispose();
+          videoPlayerService.chewieController.dispose();
+          return;
+        }
+        // videoPlayerService.chewieController.additionalOptions(context){
+        videoPlayerService.chewieController.play();
+        if(availableServers.isEmpty)fetchAvailableServers(videoId);
+        // await videoPlayerService.initializeVideo(videoUrl);
+        // await videoPlayerService.initializeVideo('http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
+        if (animeWatcherController.animeData.containsKey(videoId)) {
+          print(
+              'seeked to ${Duration(seconds: int.parse(animeWatcherController.animeData[videoId]!))}');
+          await videoPlayerService.videoController.seekTo(Duration(
+              seconds: int.parse(animeWatcherController.animeData[videoId]!)));
+        }
+        for (var items in sources) {
+          print('have link');
+          // videoPlayerService.urls.add(items['url']);
+          videoPlayerService.urls[items['quality']] = items['url'];
+        }
+        // animeWatcherController.storeData( videoId, Duration.zero);
+        // videoPlayerService.videoController.play();
+        videoPlayerService.playingUrl.value = videoUrl;
+        loading.value = false;
         videoPlayerService.chewieController.play();
         if(availableServers.isEmpty)fetchAvailableServers(videoId);
         // videoPlayerService.chewieController.additionalOptions(context){
@@ -172,7 +226,9 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                 style: myTextTheme.displayMedium,
               ),
               actions: [
-                IconButton(
+                Obx(
+                      () =>hasData.value
+                          ? IconButton(
                   onPressed: () {
                     hasData.value = true;
                     if (homeController.watchList.contains(
@@ -184,12 +240,15 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                         content: Text('Removed from watchlist',
                             style: myTextTheme.titleMedium),
                       ));
+                      homeController.storeWatchlist();
                       return;
                     }
                     homeController.watchList.add(
                         '${widget.animeKey},${widget.animeTitle},${animeDetails!.animeImg}');
                     print(
                         'added ${widget.animeKey},${widget.animeTitle},${animeDetails!.animeImg}');
+                    homeController.storeWatchlist();
+
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                       content: Text(
                         'Added to watchlist',
@@ -198,14 +257,11 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                     ));
                   },
                   // icon: Obx(() => hasData.value ?(homeController.watchList.contains('${widget.animeKey},${widget.animeTitle},${animeDetails!.animeImg}') ? const Icon(Icons.bookmark) : const Icon(Icons.bookmark_outline)):const Icon(Icons.bookmark_outline),
-                  icon: Obx(
-                    () => hasData.value
-                        ? (homeController.watchList.contains(
+                  icon:  (homeController.watchList.contains(
                                 '${widget.animeKey},${widget.animeTitle},${animeDetails!.animeImg}')
                             ? const Icon(Icons.bookmark)
-                            : const Icon(Icons.bookmark_outline))
-                        : const Icon(Icons.bookmark_outline),
-                  ),
+                            : const Icon(Icons.bookmark_outline)),
+                  ):SizedBox(),
                 )
               ],
             ),
@@ -219,23 +275,25 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                 // if(animeDetails!.episodesList.length > 100 ){
                 //   episodesList = animeDetails!.episodesList.sublist(0, 100);
                 // }
-                print('desc ${animeDetails!.description}');
+                print('chunks ${chunks.length}');
                 if (!animeWatcherController.recentWatches.contains(
                     '${widget.animeKey},${widget.animeTitle},${animeDetails!.animeImg}'))
                   animeWatcherController.recentWatches.add(
                       '${widget.animeKey},${widget.animeTitle},${animeDetails!.animeImg}');
-                if (videoPlayerService.playingUrl.value == '') {
+                if (videoPlayerService.playingUrl.value == '' && selectedEpIndex.value == 0001) {
                   try {
                     String key = animeWatcherController.getLatestEp();
                     print('key $key');
-                    if (selectedEpIndex.value == 0)
-                      selectedEpIndex.value = animeDetails!.episodesList
-                          .indexWhere((element) => element.episodeId == key);
+                    if (selectedEpIndex.value == 0001) {
+                      selectedEpIndex.value = int.parse(animeDetails!.episodesList.where((element) => element.episodeId == key).first.episodeNum);
+                      currentChunkIndex.value = selectedEpIndex.value ~/ 100;
+                      print('selected key if 0 $key ${selectedEpIndex.value}');
+                    }
                     // videoPlayerService.playingUrl.value = animeDetails!.episodesList[selectedIndex.value].episodeUrl;
                     // videoPlayerService.playingUrl.value = 'not';
                   } catch (e) {
                     print('in catch');
-                    selectedEpIndex.value = 0;
+                    selectedEpIndex.value = 1;
                     // videoPlayerService.playingUrl.value = animeDetails!.episodesList[selectedIndex.value].episodeUrl;
                     // fetchVideoUrl(animeDetails!.episodesList[selectedIndex.value].episodeId);
                   }
@@ -244,17 +302,19 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                   // print('fetching ${animeDetails!.episodesList.length}');
                   // if(animeDetails!.totalEpisodes != '0') fetchVideoUrl(animeDetails!.episodesList.last.episodeId);
 
-                  if (selectedEpIndex.value == 0) {
-                    selectedEpIndex.value =
-                        animeDetails!.episodesList.length - 1;
+                  if (selectedEpIndex.value == 0001) {
+                    selectedEpIndex.value = 1;
                     // videoPlayerService.playingUrl.value = animeDetails!.episodesList[selectedIndex.value].episodeUrl;
-                    fetchVideoUrl(animeDetails!
-                        .episodesList[selectedEpIndex.value].episodeId);
+                    fetchVideoUrl(animeDetails!.episodesList.where((element) => element.episodeNum == selectedEpIndex.value.toString()).first.episodeId);
                     // videoPlayerService.playingUrl.value = animeDetails!.episodesList[selectedIndex.value].episodeUrl;
                     // selectedIndex.value = animeDetails!.episodesList.length - 1;
                   } else
-                    fetchVideoUrl(animeDetails!
-                        .episodesList[selectedEpIndex.value].episodeId);
+                    // fetchVideoUrl(animeDetails!
+                    //     .episodesList[selectedEpIndex.value].episodeId);
+                    print('selected url is ${animeDetails!
+                        .episodesList.where((element) => element.episodeNum == selectedEpIndex.value.toString()).first.episodeId}');
+                  fetchVideoUrl(animeDetails!
+                        .episodesList.where((element) => element.episodeNum == selectedEpIndex.value.toString()).first.episodeId);
                 }
                 print('playing url ${videoPlayerService.playingUrl.value}');
 
@@ -332,16 +392,6 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                           },
                         ),
 
-                        // VideoViewer(
-                        // controller: _controller,
-                        // autoPlay: true,
-                        // source: {
-                        // "WebVTT Caption":
-                        // VideoSource(video: VideoPlayerController.networkUrl(
-                        // videoPlayerOptions: VideoPlayerOptions(allowBackgroundPlayback: true),
-                        // //This video has a problem when end
-                        // Uri.parse(playingUrl.value)))}),
-
                         const SizedBox(height: 10,),
 
                         Obx(() => (selectedServerIndex.value != 0001 &&
@@ -353,6 +403,7 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                                     scrollDirection: Axis.horizontal,
                                     clipBehavior: Clip.none,
                                     itemBuilder: (context, index) {
+                                      if(servers[index].contains('Gogo'))return SizedBox();
                                       return GestureDetector(
                                           onTap: () async {
 
@@ -371,7 +422,17 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                                             decoration: BoxDecoration(
                                                 border: Border.all(
                                                     color:
-                                                    Colors.black),
+                                                    selectedServerIndex
+                                                        .value ==
+                                                        index
+                                                        ? Colors.green
+                                                        .shade300
+                                                        .withOpacity(
+                                                        0.5)
+                                                        : Colors
+                                                        .red.shade400
+                                                        .withOpacity(
+                                                        0.5)),
                                                 borderRadius:
                                                 BorderRadius.circular(
                                                     10.0),
@@ -386,7 +447,7 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                                                     .red.shade200
                                                     .withOpacity(
                                                     0.5)),
-                                            child: Padding(padding: const EdgeInsets.all(5),child: Text(
+                                            child: Padding(padding: const EdgeInsets.symmetric(vertical: 5,horizontal: 8),child: Text(
                                               servers[index],
                                               style: const TextStyle(
                                                   fontSize: 16.0,
@@ -443,66 +504,67 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                         Row(
                           children: [
                             SizedBox(width: 5,),
-                            Text(
-                              animeDetails!.animeTitle,
-                              style: myTextTheme.titleLarge,
+                            Expanded(
+                              child: Text(
+                                animeDetails!.animeTitle,
+                                style: myTextTheme.titleLarge,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
+
                         // Text(animeDetails!.description,style: myTextTheme.bodyMedium,),
 
                     ExpandableDescription(
                       description: animeDetails!.description,
                     ),
 
-                        // ExpansionTile(
-                        //   title: Text(
-                        //     'Anime Description',
-                        //     style: myTextTheme.bodyLarge,
-                        //   ),
-                        //   children: <Widget>[
-                        //     Text(
-                        //       animeDetails!.description,
-                        //       style: myTextTheme.bodyMedium,
-                        //     )
-                        //   ],
-                        // ),
-
-                        const SizedBox(
-                          height: 15,
-                        ),
+                        Obx(() => DropdownButton<int>(
+                          value: currentChunkIndex.value,
+                          onChanged: (int? newValue) {
+                              currentChunkIndex.value = newValue!;
+                          },
+                          items: List.generate(chunks.length, (index) {
+                            return DropdownMenuItem<int>(
+                              value: index,
+                              child: Text('Episodes ${index * 100 + 1} - ${min((index + 1) * 100, animeDetails!.episodesList.length)}'),
+                            );
+                          }),
+                        )),
 
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 5),
-                          child: SizedBox(
+                          child:
+                          SizedBox(
                               height: Get.height / 3,
-                              child: GridView.builder(
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 7, // 5 containers in a row
+                              child:
+                              Obx(() => GridView.builder(
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 7,
                                   crossAxisSpacing: 8.0,
                                   mainAxisSpacing: 8.0,
                                 ),
-                                itemCount: animeDetails!.episodesList.length,
+                                itemCount: chunks[currentChunkIndex.value].length,
                                 itemBuilder: (context, index) {
-                                  final episode =
-                                      animeDetails!.episodesList[index];
+                                  final episode = chunks[currentChunkIndex.value][index];
                                   return GestureDetector(
                                       onTap: () async {
                                         // Get.to(()=> AnimePlayerScreen(videoId: episode.episodeId));
+                                        if(selectedEpIndex.value == int.parse(episode.episodeNum)) {
+                                          return;
+                                        }
                                         Duration? pos = await videoPlayerService
                                             .videoController.position;
                                         print(
-                                            'anime id ${animeDetails!.episodesList[selectedEpIndex.value].episodeId}, duration: ${pos!.inSeconds.toString()}');
-                                        animeWatcherController.storeData(
-                                            animeDetails!
-                                                .episodesList[
-                                                    selectedEpIndex.value]
-                                                .episodeId,
+                                            'anime id ${animeDetails!
+                                                .episodesList.where((element) => element.episodeNum == selectedEpIndex.value.toString()).first.episodeId}, duration: ${pos!.inSeconds.toString()}');
+                                        animeWatcherController.storeData(animeDetails!.episodesList.where((element) => element.episodeNum == selectedEpIndex.value.toString()).first.episodeId,
+                                            // animeWatcherController.storeData(animeDetails!.episodesList[selectedEpIndex.value].episodeId,
                                             pos.inSeconds.toString());
-                                        selectedEpIndex.value = index;
+                                        selectedEpIndex.value = int.parse(episode.episodeNum);
                                         videoPlayerService.playingUrl.value =
-                                            '';
+                                        '';
                                         print(
                                             'anime id selected index $selectedEpIndex');
                                         videoPlayerService.chewieController
@@ -512,8 +574,7 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                                         videoPlayerService.videoController
                                             .dispose();
                                         videoPlayerService.urls.clear();
-                                        videoPlayerService.playingUrl.value =
-                                            episode.episodeUrl;
+                                        videoPlayerService.playingUrl.value = episode.episodeUrl;
                                         fetchVideoUrl(episode.episodeId);
                                         // videoPlayerService.videoController.pause();
                                       },
@@ -522,94 +583,63 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
                                           Align(
                                             alignment: Alignment.center,
                                             child: Obx(
-                                              () => Container(
+                                                  () => Container(
                                                   height: 50,
                                                   width: 50,
                                                   decoration: BoxDecoration(
                                                       border: Border.all(
-                                                          color: Colors.black),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              10.0),
-                                                      color: selectedEpIndex
-                                                                  .value ==
-                                                              index
-                                                          ? Colors.orangeAccent
-                                                              .shade200
-                                                          : (animeWatcherController
-                                                                  .animeData
-                                                                  .containsKey(
-                                                                      episode
-                                                                          .episodeId))
+                                                          color: selectedEpIndex
+                                                              .value.toString() ==
+                                                              episode.episodeNum
+                                                              ? Colors.orangeAccent
+                                                              .shade400
+                                                              : (animeWatcherController
+                                                              .animeData
+                                                              .containsKey(
+                                                              episode
+                                                                  .episodeId))
                                                               ? Colors.green
-                                                                  .shade100
-                                                                  .withOpacity(
-                                                                      0.5)
+                                                              .shade300
+                                                              .withOpacity(
+                                                              0.5)
                                                               : Colors
-                                                                  .red.shade200
-                                                                  .withOpacity(
-                                                                      0.5))),
+                                                              .red.shade400
+                                                              .withOpacity(
+                                                              0.5)),
+                                                      borderRadius:
+                                                      BorderRadius.circular(
+                                                          10.0),
+                                                      color: selectedEpIndex
+                                                          .value.toString() ==
+                                                          episode.episodeNum
+                                                          ? Colors.orangeAccent
+                                                          .shade200
+                                                          : (animeWatcherController
+                                                          .animeData
+                                                          .containsKey(
+                                                          episode
+                                                              .episodeId))
+                                                          ? Colors.green
+                                                          .shade100
+                                                          .withOpacity(
+                                                          0.5)
+                                                          : Colors
+                                                          .red.shade200
+                                                          .withOpacity(
+                                                          0.5))),
                                             ),
                                           ),
                                           Align(
                                             alignment: Alignment.center,
                                             child: Text(
                                               episode.episodeNum,
-                                              style: const TextStyle(
-                                                  fontSize: 16.0,
-                                                  overflow: TextOverflow.fade),
+                                              style: myTextTheme.bodyMedium,
                                             ),
                                           ),
                                         ],
                                       ));
                                 },
-                              )
-                              // episodesList.isEmpty?:GridView.builder(
-                              //   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              //     crossAxisCount: 7, // 5 containers in a row
-                              //     crossAxisSpacing: 8.0,
-                              //     mainAxisSpacing: 8.0,
-                              //   ),
-                              //   itemCount: episodesList.length,
-                              //   itemBuilder: (context, index) {
-                              //     final episode = episodesList[index];
-                              //     return GestureDetector(onTap: () async {
-                              //       // Get.to(()=> AnimePlayerScreen(videoId: episode.episodeId));
-                              //       Duration? pos = await videoPlayerService.videoController.position;
-                              //       print('anime id ${animeDetails!.episodesList[selectedIndex.value].episodeId}, duration: ${pos!.inSeconds.toString()}');
-                              //       animeWatcherController.storeData(animeDetails!.episodesList[selectedIndex.value].episodeId, pos.inSeconds.toString());
-                              //       selectedIndex.value = index;
-                              //       videoPlayerService.playingUrl.value = '';
-                              //       print('anime id selected index $selectedIndex');
-                              //       videoPlayerService.chewieController.pause();
-                              //       videoPlayerService.chewieController.dispose();
-                              //       videoPlayerService.videoController.dispose();
-                              //       videoPlayerService.urls.clear();
-                              //       videoPlayerService.playingUrl.value = episode.episodeUrl;
-                              //       fetchVideoUrl(episode.episodeId);
-                              //       // videoPlayerService.videoController.pause();
-                              //     },
-                              //         child: Stack(
-                              //           children: [
-                              //             Align(alignment: Alignment.center,child: Obx(() => Container(
-                              //                 height: 50,width: 50,
-                              //                 decoration: BoxDecoration(
-                              //                     border: Border.all(color: Colors.black),
-                              //                     borderRadius: BorderRadius.circular(10.0),
-                              //                     color: selectedIndex.value == index? Colors.orangeAccent.shade200:(animeWatcherController.animeData.containsKey(episode.episodeId))?Colors.green.shade100.withOpacity(0.5):Colors.red.shade200.withOpacity(0.5)
-                              //                 )),),),
-                              //             Align(
-                              //               alignment: Alignment.center,
-                              //               child: Text(
-                              //                 episode.episodeNum,
-                              //                 style: const TextStyle(fontSize: 16.0,overflow: TextOverflow.fade),
-                              //               ),
-                              //             ),
-                              //           ],));
-                              //   },)
-                              ),
-                        ),
-
+                              )))),
                         const SizedBox(
                           height: 5,
                         ),
@@ -635,8 +665,11 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
             Duration? pos = await videoPlayerService.videoController.position;
             print(
                 'in dispose id:${animeDetails!.episodesList[selectedEpIndex.value].episodeId}, pos: ${pos!.inSeconds.toString()}');
-            animeWatcherController.storeData(
-                animeDetails!.episodesList[selectedEpIndex.value].episodeId,
+            // animeWatcherController.storeData(
+            //     animeDetails!.episodesList[selectedEpIndex.value].episodeId,
+            //     pos.inSeconds.toString());
+            animeWatcherController.storeData(animeDetails!.episodesList.where((element) => element.episodeNum == selectedEpIndex.value.toString()).first.episodeId,
+                // animeWatcherController.storeData(animeDetails!.episodesList[selectedEpIndex.value].episodeId,
                 pos.inSeconds.toString());
             await animeWatcherController.onClose();
             videoPlayerService.chewieController.dispose();
@@ -648,21 +681,6 @@ class _AnimeDetailsScreenState extends State<AnimeDetailsScreen> {
           }
         });
   }
-
-  // @override
-  // Future<void> dispose() async {
-  //   try{
-  //     super.dispose();
-  //   }catch(e){
-  //     print('caught stored data closed super failed $e');
-  //   }
-  //   Duration? pos = await videoPlayerService.videoController.position;
-  //   print('in dispose id:${animeDetails!.episodesList[selectedIndex.value].episodeId}, pos: ${pos!.inSeconds.toString()}');
-  //   animeWatcherController.storeData( animeDetails!.episodesList[selectedIndex.value].episodeId,pos.inSeconds.toString());
-  //   await animeWatcherController.onClose();
-  //   videoPlayerService.chewieController.dispose();
-  //   videoPlayerService.dispose();
-  // }
 }
 
 class ExpandableDescription extends StatefulWidget {
@@ -716,58 +734,3 @@ class _ExpandableDescriptionState extends State<ExpandableDescription> {
     );
   }
 }
-
-
-// class ExpandableDescription extends StatefulWidget {
-//   final String description;
-//
-//   ExpandableDescription({required this.description});
-//
-//   @override
-//   _ExpandableDescriptionState createState() => _ExpandableDescriptionState();
-// }
-//
-// class _ExpandableDescriptionState extends State<ExpandableDescription> {
-//   bool isExpanded = false;
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return LayoutBuilder(
-//       builder: (context, constraints) {
-//         final textPainter = TextPainter(
-//           text: TextSpan(
-//             text: widget.description,
-//             style: myTextTheme.bodySmall,
-//           ),
-//           maxLines: 3,
-//           textDirection: TextDirection.ltr,
-//         )..layout(maxWidth: constraints.maxWidth);
-//
-//         final isTextOverflow = textPainter.didExceedMaxLines;
-//
-//         print('isTextOverflow $isTextOverflow');
-//
-//         return isTextOverflow
-//             ? ExpansionTile(
-//           title: Text('Anime Description',style: myTextTheme.bodyMedium,),
-//           children: <Widget>[
-//             Padding(
-//               padding: const EdgeInsets.all(8.0),
-//               child: Text(
-//                 widget.description,
-//                 style: myTextTheme.bodySmall,
-//               ),
-//             ),
-//           ],
-//         )
-//             : Padding(
-//           padding: const EdgeInsets.all(8.0),
-//           child: Text(
-//             widget.description,
-//             style: myTextTheme.bodySmall,
-//           ),
-//         );
-//       },
-//     );
-//   }
-// }

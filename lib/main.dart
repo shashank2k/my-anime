@@ -1,5 +1,6 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:myanime/Controller/homeController.dart';
@@ -67,8 +68,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // List<> pages = [];
 
-  int _selectedIndex = 0;
-  RxBool isDarkMode = false.obs;
+  RxInt _selectedIndex = 0.obs;
+  // RxBool isDarkMode = false.obs;
   // static const TextStyle optionStyle =
   //     TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
   static const List<Widget> _widgetOptions = <Widget>[
@@ -77,26 +78,29 @@ class _MyHomePageState extends State<MyHomePage> {
     WatchListScreen(),
   ];
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
+  // void _onItemTapped(int index) {
+  //
+  //   // setState(() {
+  //   //   _selectedIndex = index;
+  //   // });
+  // }
   void _onSwipeLeft() {
     print('swiped left');
     if (_selectedIndex < _widgetOptions.length - 1) {
-      setState(() {
-        _selectedIndex++;
-      });
+      _selectedIndex.value++;
+      // setState(() {
+      //   _selectedIndex++;
+      // });
     }
   }
 
   void _onSwipeRight() {
     print('swiped right');
     if (_selectedIndex > 0) {
-      setState(() {
-        _selectedIndex--;
-      });
+      _selectedIndex.value--;
+      // setState(() {
+      //   _selectedIndex--;
+      // });
     }
   }
 
@@ -113,19 +117,20 @@ class _MyHomePageState extends State<MyHomePage> {
       homeController.recentRelease.value = data;
     });
 
-    homeController.fetchPopularAnime().then((data) {
-      print('popular');
-      homeController.popularAnime.value = data;
-    });
+    // homeController.fetchPopularAnime().then((data) {
+    //   print('popular');
+    //   homeController.popularAnime.value = data;
+    // });
 
     homeController.fetchTopAiringAnime().then((data) {
       print('top');
       homeController.topAiringAnime.value = data;
     });
 
-    var brightness =
-        SchedulerBinding.instance.platformDispatcher.platformBrightness;
-    isDarkMode.value = brightness == Brightness.dark;
+    // var brightness =
+    //     SchedulerBinding.instance.platformDispatcher.platformBrightness;
+    // isDarkMode.value = brightness == Brightness.dark;
+    // print('darkmode $isDarkMode');
 
     super.initState();
   }
@@ -186,12 +191,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 children: [
                   GestureDetector(
                     onTap: () {
-                      _onItemTapped(0);
+                      _selectedIndex.value = 0;
+                      // _onItemTapped(0);
                     },
                     child: TweenAnimationBuilder<Color?>(
                       tween: ColorTween(
-                        begin: _selectedIndex == 0 ? null : Colors.black,
-                        end: _selectedIndex == 0 ? Colors.red :isDarkMode.value ? Colors.white : Colors.black,
+                        begin: _selectedIndex.value == 0 ? Colors.transparent : Colors.black,
+                        end: _selectedIndex.value == 0 ? Colors.red : Colors.transparent,
+                        // end: _selectedIndex == 0 ? Colors.red :isDarkMode.value ? Colors.white : Colors.black,
                       ),
                       duration: const Duration(milliseconds: 300),
                       builder: (_, color, child) {
@@ -200,7 +207,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: color,
+                            color: color != Colors.transparent? color : null,
                           ),
                         );
                       },
@@ -208,12 +215,14 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      _onItemTapped(1);
+                      _selectedIndex.value = 1;
+                      // _onItemTapped(1);
                     },
                     child: TweenAnimationBuilder<Color?>(
                       tween: ColorTween(
-                        begin: _selectedIndex == 1 ? null : Colors.black,
-                        end: _selectedIndex == 1 ? Colors.red :isDarkMode.value ? Colors.white : Colors.black,
+                        begin: _selectedIndex.value == 1 ? Colors.transparent : Colors.black,
+                        // end: _selectedIndex == 1 ? Colors.red :isDarkMode.value ? Colors.white : Colors.black,
+                        end: _selectedIndex.value == 1 ? Colors.red : Colors.transparent,
                       ),
                       duration: const Duration(milliseconds: 300),
                       builder: (_, color, child) {
@@ -222,7 +231,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: color,
+                            color: color != Colors.transparent? color : null,
                           ),
                         );
                       },
@@ -230,12 +239,14 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      _onItemTapped(2);
+                      _selectedIndex.value = 2;
+                      // _onItemTapped(2);
                     },
                     child: TweenAnimationBuilder<Color?>(
                       tween: ColorTween(
-                        begin: _selectedIndex == 2 ? null : Colors.black,
-                        end: _selectedIndex == 2 ? Colors.red  : isDarkMode.value ? Colors.white : Colors.black,
+                        begin: _selectedIndex.value == 2 ? Colors.transparent : Colors.black,
+                        end: _selectedIndex.value == 2 ? Colors.red  : Colors.transparent,
+                        // end: _selectedIndex == 2 ? Colors.red  : isDarkMode.value ? Colors.white : Colors.black,
                       ),
                       duration: const Duration(milliseconds: 300),
                       builder: (_, color, child) {
@@ -244,7 +255,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: color,
+                            color: color != Colors.transparent? color : null,
                           ),
                         );
                       },
@@ -305,7 +316,8 @@ class _MyHomePageState extends State<MyHomePage> {
           //   ],
           // ),
         ),),
-      body:GestureDetector(
+      body:
+      WillPopScope(child: GestureDetector(
         onHorizontalDragEnd: (DragEndDetails details) {
           if (details.primaryVelocity != null) {
             // Check if the swipe is in the left or right direction
@@ -318,10 +330,36 @@ class _MyHomePageState extends State<MyHomePage> {
             }
           }
         },
-        child: Center(
-          child: _widgetOptions.elementAt(_selectedIndex),
-        ),
-      ),
+        child: Obx(() => Center(
+          child: _widgetOptions.elementAt(_selectedIndex.value),
+        )),
+      ), onWillPop:  () async {
+        showModalBottomSheet(context: context, builder: (context) {
+          return Container(
+              width: Get.width,
+              height: 110,
+              decoration: BoxDecoration(
+                  // color: isDarkMode?Colors.black:Colors.white,
+                  borderRadius: const BorderRadius.only(topRight: Radius.circular(20),topLeft: Radius.circular(20))),
+              // padding: const EdgeInsets.symmetric(20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Text('Do you want to exit the app?',style: myTextTheme.bodyMedium,),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,children: [
+                    ElevatedButton(onPressed: () {
+                      Navigator.pop(context);
+                      exit(0);
+                      // return true;
+                    }, child: Text('Yes',style: myTextTheme.bodyMedium,)),
+                    ElevatedButton(onPressed: () {
+                      Navigator.pop(context);
+                    }, child: Text('No',style: myTextTheme.bodyMedium,)),])
+                ],)
+          );
+        });
+        return false;
+      })
       // bottomNavigationBar: ClipRRect(
       //   clipBehavior: Clip.hardEdge,
       //   borderRadius: const BorderRadius.only(

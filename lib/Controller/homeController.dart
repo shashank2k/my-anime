@@ -73,6 +73,16 @@ class HomeController{
     }
   }
 
+  Future<void> storeWatchlist() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      prefs.setStringList('watchList', watchList as List<String>);
+      print('saved watchlist');
+    } catch (e) {
+      throw Exception('Failed to fetch recent releases: $e');
+    }
+  }
+
   Future<List<Anime>> fetchRecentReleases() async {
     try {
       final response = await Dio().get('${Common.baseUrl}anime/gogoanime/recent-episodes');

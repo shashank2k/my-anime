@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -6,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
 import 'package:myanime/Controller/animeWatcherController.dart';
 import 'package:myanime/Controller/homeController.dart';
 import 'package:myanime/Views/animeDetailsScreen.dart';
@@ -43,22 +43,62 @@ class _HomeScreenState extends State<HomeScreen> {
     await animeWatcherController.init();
     animeWatcherController.retrieveRecentWatches();
 
-    // homeController.fetchTopAiringAnime().then((value) => (value) {
-    //   homeController.topAiringAnime.value = value;
-    // });
-    // homeController.fetchRecentReleases().then((value) => (value) {
-    //   homeController.recentRelease.value = value;
-    // });
-    // homeController.fetchPopularAnime().then((value) => (value) {
-    //   homeController.popularAnime.value = value;
-    // });
+    if (!imagesPrecached) {
+      try {
+        for (var image in homeController.recentRelease) {
+          String url = image.animeImg;
+          await precacheImage(NetworkImage(url), context);
+        }
+        for (var imageUrl in homeController.topAiringAnime) {
+          String url = imageUrl.animeImg;
+          await precacheImage(NetworkImage(url), context);
+          print('done for image $url');
+        }
+        imagesPrecached = true;
+      } catch (e) {
+        // Handle errors during precaching
+        print('Error during image precaching: $e');
+      }
+    }
 
     super.didChangeDependencies();
   }
 
+  bool imagesPrecached = false;
+
+  // Future<void> didChangeDependencies() async {
+  //   await animeWatcherController.init();
+  //   animeWatcherController.retrieveRecentWatches();
+  //
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     for (var image in homeController.recentRelease) {
+  //       String url = image.animeImg;
+  //       precacheImage(NetworkImage(url), context);
+  //     }
+  //     for (var imageUrl in homeController.topAiringAnime) {
+  //       String url = imageUrl.animeImg;
+  //       precacheImage(NetworkImage(url), context);
+  //       print('done for image $url');
+  //       // precacheImage(NetworkImage(imageUrl), context);
+  //     }
+  //   });
+  //
+  //   // homeController.fetchTopAiringAnime().then((value) => (value) {
+  //   //   homeController.topAiringAnime.value = value;
+  //   // });
+  //   // homeController.fetchRecentReleases().then((value) => (value) {
+  //   //   homeController.recentRelease.value = value;
+  //   // });
+  //   // homeController.fetchPopularAnime().then((value) => (value) {
+  //   //   homeController.popularAnime.value = value;
+  //   // });
+  //
+  //   super.didChangeDependencies();
+  // }
+
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(child: RefreshIndicator(
+    return RefreshIndicator(
         onRefresh: () => _refreshData(),
         child: Scaffold(
             body: Padding(
@@ -76,12 +116,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               style: myTextTheme.displaySmall,
                             ),
                             IconButton(
-                            icon: const Icon(Icons.search),
-                            onPressed: () {
-                              // Open a search dialog or perform search actions here.
-                              showSearch(context: context, delegate: AnimeSearchDelegate());
-                            },
-                          ),
+                              icon: const Icon(Icons.search),
+                              onPressed: () {
+                                // Open a search dialog or perform search actions here.
+                                showSearch(context: context, delegate: AnimeSearchDelegate());
+                              },
+                            ),
                           ],
                         ),
                         const SizedBox(
@@ -102,12 +142,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                           animeTitle: anime.animeTitle));
                                     },
                                     child: Stack(
+                                      alignment: Alignment.center,
                                       children: [
                                         Container(
                                           width: double
                                               .infinity, // Takes entire screen width
                                           height: Get.height /
-                                              3, // 1/3 of screen height
+                                              2, // 1/3 of screen height
                                           clipBehavior: Clip.hardEdge,
                                           decoration: BoxDecoration(
                                             borderRadius:
@@ -115,12 +156,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 5), // No rounded corners
                                           ),
                                           child: CachedNetworkImage(
-                                            fit: BoxFit
-                                                .cover, // Cover the entire container
+                                            fit: BoxFit.fill, // Cover the entire container
                                             width: double.infinity,
                                             imageUrl: anime.animeImg,
                                             placeholder: (context, url) =>
-                                            const CircularProgressIndicator(),
+                                                Center(widthFactor: 2,heightFactor: 2,child: CircularProgressIndicator(),),
                                             errorWidget:
                                                 (context, url, error) {
                                               print(
@@ -143,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   ? Colors.black
                                                   .withOpacity(0.7)
                                                   : Colors.white.withOpacity(
-                                                  0.5), // Adjust the background color and opacity
+                                                  0.9), // Adjust the background color and opacity
                                               borderRadius:
                                               BorderRadius.circular(
                                                   5),
@@ -151,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             child: Text(
                                               title, // Your title here
                                               style:
-                                              myTextTheme.bodySmall,
+                                              myTextTheme.bodyMedium,
                                               maxLines: 1,
                                               overflow: TextOverflow.fade,
                                             ),
@@ -165,16 +205,20 @@ class _HomeScreenState extends State<HomeScreen> {
                             }).toList(),
                             options: CarouselOptions(
                               height:
-                              Get.height / 3, // 1/3 of screen height
-                              viewportFraction:
-                              1.0, // Show only one image at a time
+                              Get.height / 2, // 1/3 of screen height
+                              // Get.height / 2.3, // 1/3 of screen height
+                              enlargeCenterPage: true,
+                              // enlargeFactor: 2,
+                              pageSnapping: true,
+                              // viewportFraction: 0.75, // Show only one image at a time
+                              viewportFraction: 1, // Show only one image at a time
                               enableInfiniteScroll: true, // Infinite loop
                               autoPlay: true, // Auto-play the carousel
                               autoPlayInterval: const Duration(
                                   seconds: 3), // Auto-play interval
                             ),
                           )
-                              : SizedBox(height: Get.height/3,width: Get.width,child: Padding(padding:  EdgeInsets.all(Get.width/4),child: const Center(child: CircularProgressIndicator(),)),),
+                              : SizedBox(height: Get.height/2.6,width: Get.width,child: Padding(padding:  EdgeInsets.all(Get.width/4),child: const Center(widthFactor: 2,heightFactor: 2,child: CircularProgressIndicator(),)),),
                         ),
                         const SizedBox(
                           height: 10,
@@ -204,10 +248,33 @@ class _HomeScreenState extends State<HomeScreen> {
                                     .recentWatches.length,
                                 clipBehavior: Clip.none,
                                 itemBuilder: (context, index) {
-                                  List<String> data =
-                                  animeWatcherController
-                                      .recentWatches[index]
-                                      .split(',');
+                                  List<String> data = [];
+                                  data.add(animeWatcherController
+                                      .recentWatches[index].split(',').first);
+                                  if(animeWatcherController.recentWatches[index].split(',').last == 'movie') {
+                                    print('is movie ${animeWatcherController.recentWatches[index]}');
+                                    data.add(animeWatcherController
+                                        .recentWatches[index].substring(animeWatcherController
+                                        .recentWatches[index].indexOf(',')+1,animeWatcherController
+                                        .recentWatches[index].indexOf('http')-1));
+                                    data.add(animeWatcherController
+                                        .recentWatches[index].substring(animeWatcherController
+                                        .recentWatches[index].indexOf('http'),animeWatcherController
+                                        .recentWatches[index].lastIndexOf(',')));
+                                  }
+                                  else{
+                                    data.add(animeWatcherController
+                                        .recentWatches[index].substring(animeWatcherController
+                                        .recentWatches[index].indexOf(',')+1,animeWatcherController
+                                        .recentWatches[index].lastIndexOf(',')));
+                                    data.add(animeWatcherController
+                                        .recentWatches[index].split(',').last);
+                                  }
+                                  // List<String> data =
+                                  // animeWatcherController
+                                  //     .recentWatches[index]
+                                  //     .split(',');
+                                  print('data for $index is $data');
                                   print('image for $index is ${data[2]}');
                                   return GestureDetector(
                                     onTap: () {
@@ -230,9 +297,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                       180, // Set the desired width for each item
                                       margin: const EdgeInsets.all(10),
                                       clipBehavior: Clip.hardEdge,
-                                      decoration: BoxDecoration(
-                                          borderRadius:
-                                          BorderRadius.circular(20)),
+                                      decoration: const BoxDecoration(
+                                        // borderRadius:  BorderRadius.circular(20)
+                                          borderRadius:  BorderRadius.only(topLeft: Radius.circular(20),topRight: Radius.circular(20)
+                                          )),
                                       child: Column(
                                         crossAxisAlignment:
                                         CrossAxisAlignment.center,
@@ -243,7 +311,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             height: 130,
                                             imageUrl: data[2],
                                             placeholder: (context, url) =>
-                                            const CircularProgressIndicator(),
+                                                Center(widthFactor: 2,heightFactor: 2,child: CircularProgressIndicator(),),
                                             errorWidget:
                                                 (context, url, error) {
                                               print(
@@ -279,11 +347,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         // const SizedBox(height: 10,),
 
-                        Obx(
-                              () => homeController.popularAnime.isNotEmpty
-                              ? PopularWidget()
-                              : const SizedBox(),
-                        ),
+                        // Obx(
+                        //       () => homeController.popularAnime.isNotEmpty
+                        //       ? PopularWidget()
+                        //       : const SizedBox(),
+                        // ),
 
                         // GenreWidget(),
 
@@ -291,37 +359,19 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
-                )))), onWillPop: () async {
-                  showModalBottomSheet(context: context, builder: (context) {
-                    return Container(
-                      width: Get.width,
-                      height: 110,
-                      decoration: BoxDecoration(color: isDarkMode?Colors.black:Colors.white, borderRadius: BorderRadius.only(topRight: Radius.circular(20),topLeft: Radius.circular(20))),
-                      // padding: const EdgeInsets.symmetric(20),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Text('Do you want to exit the app?',style: myTextTheme.bodyMedium,),
-                          Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,children: [
-                            ElevatedButton(onPressed: () {
-                              Navigator.pop(context);
-                              exit(0);
-                              // return true;
-                            }, child: Text('Yes',style: myTextTheme.bodyMedium,)),
-                            ElevatedButton(onPressed: () {
-                              Navigator.pop(context);
-                            }, child: Text('No',style: myTextTheme.bodyMedium,)),])
-                          ],)
-                    );
-                  });
-                  return false;
-                },);
+                ))));
   }
 
   _refreshData() {
+    homeController.recentRelease.clear();
+    homeController.topAiringAnime.clear();
     homeController.fetchRecentReleases().then((data) {
       homeController.recentRelease.value = data;
     });
+    // homeController.fetchTopAiringAnime().then((data) {
+    //   homeController.topAiringAnime.value = data;
+    // });
+
 
     // homeController.fetchPopularAnime().then((data) {
     //   print('popular');
@@ -538,7 +588,7 @@ class PopularWidget extends StatelessWidget {
                             height: 180,
                             imageUrl: anime.animeImg,
                             placeholder: (context, url) =>
-                                const CircularProgressIndicator(),
+                                const Center(widthFactor: 2,heightFactor: 2,child: CircularProgressIndicator(),),
                             errorWidget: (context, url, error) {
                               print("Error loading image: $error");
                               return const Icon(Icons.error);
@@ -737,7 +787,30 @@ class TopAiringWidget extends StatelessWidget {
             ),
             SizedBox(
               height: 240,
-              child: ListView.builder(
+              child:
+              homeController.topAiringAnime.isEmpty ? Center(
+                child: Column(
+                  children: [
+                    Lottie.asset(
+                      'assets/lottie/emptySearch.json', // Replace with the path to your local JSON file
+                      width: 200,
+                      height: 200,
+                      repeat: true, // Set to true if you want the animation to loop
+                      reverse: false, // Set to true if you want the animation to play in reverse
+                      animate: true, // Set to false if you want to start with the animation paused
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    Text(
+                      'hmm...\nNo titles found.',
+                      style: myTextTheme.bodyLarge,
+                      textAlign: TextAlign.center,
+                    )
+                  ],
+                ),
+              ) :
+              ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: homeController.topAiringAnime.length,
                 clipBehavior: Clip.none,
@@ -768,8 +841,8 @@ class TopAiringWidget extends StatelessWidget {
                             width: double.infinity,
                             height: 180,
                             imageUrl: anime.animeImg,
-                            placeholder: (context, url) =>
-                                const CircularProgressIndicator(),
+                          placeholder: (context, url) =>
+                              Center(widthFactor: 2,heightFactor: 2,child: CircularProgressIndicator(),),
                             errorWidget: (context, url, error) {
                               print("Error loading image: $error");
                               return const Icon(Icons.error);

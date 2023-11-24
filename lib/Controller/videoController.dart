@@ -13,11 +13,15 @@ class VideoPlayerService extends GetxController {
   Duration? position;
 
   Future<void> initializeVideo(String videoUrl) async {
+    // if(videoUrl == playingUrl.value) return;
+    print('IN INITIALIZE VIDEO called $videoUrl urio parsed');
     _videoController = VideoPlayerController.networkUrl(
       Uri.parse(videoUrl),
       videoPlayerOptions: VideoPlayerOptions(allowBackgroundPlayback: true),
     );
+    print('IN INITIALIZE VIDEO $videoUrl urio parsed');
     await _videoController.initialize();
+    print('IN INITIALIZE VIDEO $videoUrl controller initialized');
     chewieController = ChewieController(
       videoPlayerController: _videoController,
       draggableProgressBar: true,
@@ -30,10 +34,13 @@ class VideoPlayerService extends GetxController {
               showModalBottomSheet(
                 context: context,
                 builder: (context) {
-                  return ListView(
+                  return SizedBox(height: 250,child: ListView(
                     children: urls.entries.map((entry) {
+                      if(!entry.key.contains('p') || entry.key == 'backup')return const SizedBox();
                       return ListTile(
                         title: Text(entry.key),
+                        // titleTextStyle: myTextTheme.bodyMedium,
+                        tileColor: playingUrl.value == entry.value ? Colors.grey[300] : null,
                         onTap: () async {
                           // Change the playing URL to the selected quality's URL
                           changeQuality(entry.value);
@@ -41,7 +48,7 @@ class VideoPlayerService extends GetxController {
                         },
                       );
                     }).toList(),
-                  );
+                  ),);
                 },
               );
             },
@@ -62,7 +69,7 @@ class VideoPlayerService extends GetxController {
     // });
 
 
-    print('IN INITIALIZE VIDEO $videoUrl');
+    print('IN INITIALIZE VIDEO completed $videoUrl');
     // _videoController = VideoController.network(videoUrl);
     // _videoController.addListener((){
     //   print(_videoController.value.position);
@@ -83,14 +90,17 @@ class VideoPlayerService extends GetxController {
     print('playing new before init $newUrl');
     try{
       await initializeVideo(newUrl);
+      playingUrl.value = newUrl;
     }
     catch(e){
       await initializeVideo(playingUrl.value);
+      String temp = playingUrl.value;
+      playingUrl.value = newUrl;
+      playingUrl.value  = temp;
       print(e);
     }
     print('playing new inited $newUrl');
     chewieController.videoPlayerController.seekTo(position??Duration.zero);
-    playingUrl.value = newUrl;
     chewieController.play();
     print('playing new end $playingUrl');
     // _videoController = VideoPlayerController.networkUrl(

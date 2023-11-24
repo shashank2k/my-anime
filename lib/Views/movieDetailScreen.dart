@@ -29,6 +29,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
   List<Episode> episodes = [];
   late AnimeWatcherController animeWatcherController;
   RxInt selectedIndex = 0.obs;
+  RxBool loading = false.obs;
   final VideoPlayerService videoPlayerService = Get.put(VideoPlayerService());
   HomeController homeController = Get.put(HomeController());
   MovieController movieController = Get.put(MovieController());
@@ -72,6 +73,7 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
   Future<void> fetchVideoUrl(String videoId) async {
     // hasData.value = true;
     // final response = await Dio().get('https://my-anime.onrender.com/vidcdn/watch/$videoId');
+    loading.value = true;
     print(
         'query ${Common.movieUrls[movieController.selectedServer.value]}watch');
     final response = await Dio().get(
@@ -103,14 +105,21 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
           await videoPlayerService.videoController.seekTo(Duration(
               seconds: int.parse(animeWatcherController.animeData[videoId]!)));
         }
+        loading.value = false;
         videoPlayerService.playingUrl.value = videoUrl;
-        for (var items in sources) {
-          print('have link');
-          // videoPlayerService.urls.add(items['url']);
-          videoPlayerService.urls[items['quality']] = items['url'];
-        }
+        // for (var items in sources) {
+        //   print('have link');
+        //   // videoPlayerService.urls.add(items['url']);
+        //   videoPlayerService.urls[items['quality']] = items['url'];
+        // }
         // animeWatcherController.storeData( videoId, Duration.zero);
         // videoPlayerService.videoController.play();
+        print('current route ${Get.currentRoute} previous route ${Get.previousRoute}');
+        if(Get.currentRoute == '/') {
+          videoPlayerService.videoController.dispose();
+          videoPlayerService.chewieController.dispose();
+          return;
+        }
         videoPlayerService.chewieController.play();
         // videoPlayerService.chewieController.additionalOptions(context){
         //   return <OptionItem>[
@@ -163,10 +172,12 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                         content: Text('Removed from watchlist',
                             style: myTextTheme.titleMedium),
                       ));
+                      homeController.storeWatchlist();
                       return;
                     }
                     homeController.watchList.add(
-                        '${widget.animeKey},${widget.title},${animeDetails!.image}');
+                        '${widget.animeKey},${widget.title},${animeDetails!.image},movie');
+                    homeController.storeWatchlist();
                     print(
                         'added ${widget.animeKey},${widget.title},${animeDetails!.image}');
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -245,35 +256,66 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Obx(
-                          () {
+                              () {
                             if (videoPlayerService.playingUrl.value != '') {
                               // return SizedBox(width: Get.width,height: Get.height / 4,child: VideoPlayer(videoPlayerService.videoController),);
-                              return FittedBox(
-                                fit: BoxFit.cover,
-                                child: SizedBox(
-                                  width: Get.width,
-                                  height: Get.height / 3.6,
-                                  child: Chewie(
-                                    controller:
+                              return Stack(
+                                children: [
+                                  FittedBox(
+                                    fit: BoxFit.cover,
+                                    child: SizedBox(
+                                      width: Get.width,
+                                      height: Get.height / 3.6,
+                                      child: Chewie(
+                                        controller:
                                         videoPlayerService.chewieController,
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  loading.value
+                                      ? SizedBox(
+                                    height: Get.height / 3,
+                                    width: double.infinity,
+                                    child: const Center(
+                                      heightFactor: 2,
+                                      widthFactor: 2,
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  )
+                                      : const SizedBox(),
+                                ],
                               );
                               // return SizedBox(width: Get.width,height: Get.height / 4,child: VideoPlayer(videoPlayerService.videoController),);
                             } else {
-                              return SizedBox(
-                                height: Get.height / 3,
-                                width: double.infinity,
-                                child: CachedNetworkImage(
-                                  fit: BoxFit.cover,
-                                  imageUrl: animeDetails!.image,
-                                  placeholder: (context, url) =>
+                              print('currently ${loading.value}');
+                              return Stack(
+                                children: [
+                                  SizedBox(
+                                    height: Get.height / 3,
+                                    width: double.infinity,
+                                    child: CachedNetworkImage(
+                                      fit: BoxFit.cover,
+                                      imageUrl: animeDetails!.image,
+                                      placeholder: (context, url) =>
                                       const CircularProgressIndicator(),
-                                  errorWidget: (context, url, error) {
-                                    print("Error loading image: $error");
-                                    return const Icon(Icons.error);
-                                  },
-                                ),
+                                      errorWidget: (context, url, error) {
+                                        print("Error loading image: $error");
+                                        return const Icon(Icons.error);
+                                      },
+                                    ),
+                                  ),
+                                  loading.value
+                                      ? SizedBox(
+                                    height: Get.height / 3,
+                                    width: double.infinity,
+                                    child: const Center(
+                                      heightFactor: 2,
+                                      widthFactor: 2,
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  )
+                                      : const SizedBox(),
+                                ],
                               );
                             }
                           },
@@ -288,16 +330,24 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                         // videoPlayerOptions: VideoPlayerOptions(allowBackgroundPlayback: true),
                         // //This video has a problem when end
                         // Uri.parse(playingUrl.value)))}),
-                        Text(
-                          animeDetails!.title,
-                          style: myTextTheme.titleLarge,
+                        const SizedBox(width: 15,),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            const SizedBox(width: 5,),
+                            Text(
+                              animeDetails!.title,
+                              style: myTextTheme.titleLarge,
+                            )
+                          ],
                         ),
                         // Text(animeDetails!.description,style: myTextTheme.bodyMedium,),
 
-                        SizedBox(
-                          height: Get.height / 5,
-                        ),
-                        Padding(
+                        // ExpandableDescription(
+                        //   description: animeDetails!.description,
+                        // ),
+                        const SizedBox(height: 10,),
+                        if(animeDetails!.episodes.length > 1)Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 5),
                           child: SizedBox(
                               height: Get.height / 3,
@@ -325,6 +375,9 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                                                     selectedIndex.value]
                                                 .id,
                                             pos.inSeconds.toString());
+                                        // animeWatcherController.storeData(animeDetails!.episodesList.where((element) => element.episodeNum == selectedEpIndex.value.toString()).first.episodeId,
+                                        //     // animeWatcherController.storeData(animeDetails!.episodesList[selectedEpIndex.value].episodeId,
+                                        //     pos.inSeconds.toString());
                                         selectedIndex.value = index;
                                         videoPlayerService.playingUrl.value =
                                             '';
@@ -352,7 +405,24 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                                                   width: 50,
                                                   decoration: BoxDecoration(
                                                       border: Border.all(
-                                                          color: Colors.black),
+                                                          color: selectedIndex
+                                                              .value ==
+                                                              index
+                                                              ? Colors.orangeAccent
+                                                              .shade400
+                                                              : (animeWatcherController
+                                                              .animeData
+                                                              .containsKey(
+                                                              episode
+                                                                  .id))
+                                                              ? Colors.green
+                                                              .shade300
+                                                              .withOpacity(
+                                                              0.5)
+                                                              : Colors
+                                                              .red.shade400
+                                                              .withOpacity(
+                                                              0.5)),
                                                       borderRadius:
                                                           BorderRadius.circular(
                                                               10.0),

@@ -50,6 +50,7 @@ dependencies:
   flutter_local_notifications: ^16.1.0
   chewie: ^1.7.1
   flutter_svg: ^2.0.9
+  lottie: ^2.7.0
 
 dev_dependencies:
   flutter_test:
@@ -76,7 +77,8 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/
-#     - watchlist_empty.svg
+    - assets/icon/
+    - assets/lottie/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

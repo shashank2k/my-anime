@@ -39,8 +39,8 @@ class AnimeDetails {
       synopsis: json['synopsis'] ?? '',
       animeImg: json['image'] ?? '',
       totalEpisodes: json['totalEpisodes'].toString() ?? '',
-      // episodesList: episodesData.map((episodeJson) => Episode.fromJson(episodeJson)).toList(),
-      episodesList: episodesData.map((episodeJson) => Episode.fromJson(episodeJson)).toList().reversed.toList(),
+      episodesList: episodesData.map((episodeJson) => Episode.fromJson(episodeJson)).toList(),
+      // episodesList: episodesData.map((episodeJson) => Episode.fromJson(episodeJson)).toList().reversed.toList(),
     );
   }
 
